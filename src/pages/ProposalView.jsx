@@ -38,11 +38,16 @@ export default function ProposalView() {
   const freightTotal = freightItems + freightExtra
   const hasFreight   = freightTotal > 0
 
-  const totalRevenue = items.reduce((s, i) => {
-    const fp = Number(i.final_price) || 0
-    const tsiTotal = (i.tsi || []).reduce((ts, t) => ts + Number(t.quantity) * Number(t.unit_price), 0)
-    return s + Number(i.quantity) * fp + tsiTotal
+  const totalProducts = items.reduce((s, i) => {
+    const fp = Number(i.final_price) || Number(i.unit_price)
+    return s + Number(i.quantity) * fp
   }, 0)
+
+  const totalTSI = items.reduce((s, i) => {
+    return s + (i.tsi || []).reduce((ts, t) => ts + Number(t.quantity) * Number(t.unit_price), 0)
+  }, 0)
+
+  const totalRevenue = totalProducts + totalTSI
 
   return (
     <>
@@ -128,23 +133,36 @@ export default function ProposalView() {
                       {showDiscCol && <td style={{ textAlign: 'right' }}>{fmtBRL(fp)}</td>}
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtBRL(total)}</td>
                     </tr>
-                    {/* TSI sub-rows */}
-                    {isSeed && (it.tsi || []).map(t => {
-                      const tTotal = Number(t.quantity) * Number(t.unit_price)
+                    {/* TSI sub-rows + subtotal */}
+                    {isSeed && (it.tsi || []).length > 0 && (() => {
+                      const tsiSubtotal = (it.tsi || []).reduce((s, t) => s + Number(t.quantity) * Number(t.unit_price), 0)
                       return (
-                        <tr key={t.id} className="p-tsi-row">
-                          <td style={{ paddingLeft: 24 }}>
-                            <span className="p-tsi-label">↳ TSI:</span> {t.tsi_name}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>{t.quantity}</td>
-                          <td style={{ textAlign: 'center' }}>{t.unit}</td>
-                          <td style={{ textAlign: 'right' }}>{fmtBRL(t.unit_price)}</td>
-                          {showDiscCol && <td>—</td>}
-                          {showDiscCol && <td style={{ textAlign: 'right' }}>{fmtBRL(t.unit_price)}</td>}
-                          <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtBRL(tTotal)}</td>
-                        </tr>
+                        <>
+                          {(it.tsi || []).map(t => {
+                            const tTotal = Number(t.quantity) * Number(t.unit_price)
+                            return (
+                              <tr key={t.id} className="p-tsi-row">
+                                <td style={{ paddingLeft: 24 }}>
+                                  <span className="p-tsi-label">↳ TSI:</span> {t.tsi_name}
+                                </td>
+                                <td style={{ textAlign: 'center' }}>{t.quantity}</td>
+                                <td style={{ textAlign: 'center' }}>{t.unit}</td>
+                                <td style={{ textAlign: 'right' }}>{fmtBRL(t.unit_price)}</td>
+                                {showDiscCol && <td>—</td>}
+                                {showDiscCol && <td style={{ textAlign: 'right' }}>{fmtBRL(t.unit_price)}</td>}
+                                <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtBRL(tTotal)}</td>
+                              </tr>
+                            )
+                          })}
+                          <tr className="p-tsi-subtotal-row">
+                            <td colSpan={showDiscCol ? 5 : 3} style={{ paddingLeft: 24, fontStyle: 'italic', color: '#1e5c3e', fontSize: '.8rem' }}>
+                              Subtotal TSI — {it.product_name_free}
+                            </td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#1e5c3e' }}>{fmtBRL(tsiSubtotal)}</td>
+                          </tr>
+                        </>
                       )
-                    })}
+                    })()}
                   </>
                 )
               })}
@@ -155,21 +173,25 @@ export default function ProposalView() {
         {/* Totals */}
         <div className="p-totals">
           <div className="p-totals-box">
+            <div className="p-total-row">
+              <span>Produtos</span>
+              <span>{fmtBRL(totalProducts)}</span>
+            </div>
+            {totalTSI > 0 && (
+              <div className="p-total-row">
+                <span>Tratamentos (TSI)</span>
+                <span>{fmtBRL(totalTSI)}</span>
+              </div>
+            )}
             {hasFreight && (
-              <>
-                <div className="p-total-row">
-                  <span>Subtotal (produtos)</span>
-                  <span>{fmtBRL(totalRevenue - freightTotal)}</span>
-                </div>
-                <div className="p-total-row">
-                  <span>Frete</span>
-                  <span>{fmtBRL(freightTotal)}</span>
-                </div>
-              </>
+              <div className="p-total-row">
+                <span>Frete</span>
+                <span>{fmtBRL(freightTotal)}</span>
+              </div>
             )}
             <div className="p-total-row p-total-grand">
               <span>Total Geral</span>
-              <span>{fmtBRL(totalRevenue + (hasFreight ? 0 : 0))}</span>
+              <span>{fmtBRL(totalRevenue + freightTotal)}</span>
             </div>
           </div>
         </div>
@@ -282,6 +304,12 @@ export default function ProposalView() {
           font-size: .8125rem;
           color: #2a7a52;
           border-bottom: 1px solid #e8f4ed;
+        }
+        .p-tsi-subtotal-row td {
+          background: #e8f4ed;
+          font-size: .8125rem;
+          border-bottom: 2px solid #c8e6d4;
+          padding: 7px 10px;
         }
         .p-tsi-label { font-weight: 600; }
         .p-category {
