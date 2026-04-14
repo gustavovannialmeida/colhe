@@ -32,7 +32,7 @@ export default function QuotationNew() {
   const [error, setError]   = useState('')
 
   const [form, setForm] = useState({
-    client_name: '', freight_extra: '', commission_pct: '', notes: '',
+    client_name: '', payment_date: '', commission_pct: '', notes: '',
   })
   const [items, setItems] = useState([emptyItem()])
 
@@ -68,7 +68,7 @@ export default function QuotationNew() {
     if (!q) return
     setForm({
       client_name:    q.client_name_free || '',
-      freight_extra:  q.freight || '',
+      payment_date:   q.payment_date || '',
       commission_pct: q.commission_pct || '',
       notes:          q.notes || '',
     })
@@ -143,8 +143,7 @@ export default function QuotationNew() {
     return acc
   }, { revenue: 0, cost: 0, freight: 0 })
 
-  const freightExtra = Number(form.freight_extra) || 0
-  const freightTotal = totals.freight + freightExtra
+  const freightTotal = totals.freight
   const commission   = totals.revenue * (Number(form.commission_pct) || 0) / 100
   const grossMargin  = totals.revenue ? ((totals.revenue - totals.cost) / totals.revenue) * 100 : 0
   const netMargin    = totals.revenue ? ((totals.revenue - totals.cost - freightTotal - commission) / totals.revenue) * 100 : 0
@@ -170,7 +169,8 @@ export default function QuotationNew() {
         client_id:        null,
         client_name_free: form.client_name.trim(),
         seller_id:        sellerId,
-        freight:          freightExtra,
+        freight:          0,
+        payment_date:     form.payment_date || null,
         commission_pct:   Number(form.commission_pct) || 0,
         notes:            form.notes || '',
         ...(statusOverride ? { status: statusOverride } : {}),
@@ -287,13 +287,10 @@ export default function QuotationNew() {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">
-                      Frete extra (R$)
-                      <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: 6, fontSize: '.75rem' }}>taxa fixa ou mínimo adicional</span>
-                    </label>
-                    <input className="form-control" type="number" min="0" step="0.01"
-                      placeholder="0,00" value={form.freight_extra}
-                      onChange={e => setF('freight_extra', e.target.value)} />
+                    <label className="form-label">Data de Pagamento</label>
+                    <input className="form-control" type="date"
+                      value={form.payment_date}
+                      onChange={e => setF('payment_date', e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Comissão (%)</label>
@@ -344,9 +341,9 @@ export default function QuotationNew() {
                 <SummaryRow label="Custo (produtos)" value={fmtBRL(totals.cost)} />
                 <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
                   <SummaryRow label="Frete dos itens" value={fmtBRL(totals.freight)} />
-                  {freightExtra > 0 && <SummaryRow label="Frete extra" value={fmtBRL(freightExtra)} />}
+                  
                   <div style={{ borderTop: '1px solid var(--border-light)', marginTop: 6, paddingTop: 6 }}>
-                    <SummaryRow label="Frete total" value={fmtBRL(freightTotal)} bold />
+                    <SummaryRow label="Frete (itens)" value={fmtBRL(freightTotal)} bold />
                   </div>
                 </div>
                 <SummaryRow label="Comissão" value={fmtBRL(commission)} />
@@ -412,8 +409,8 @@ function ItemRow({ item, idx, productSuggestions, tsiByType, onSetItem, onRemove
         </div>
       </div>
 
-      {/* Row 2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '80px 110px 110px 75px 115px 90px', gap: 8 }}>
+      {/* Row 2: Qtd | Custo unit. | Frete/un. | Preço unit. | Desc.% | Margem */}
+      <div style={{ display: 'grid', gridTemplateColumns: '80px 110px 110px 110px 75px 90px', gap: 8 }}>
         <div>
           {idx === 0 && <ColLabel>Qtd</ColLabel>}
           <input className="form-control" type="number" min="0" step="any"
@@ -426,17 +423,6 @@ function ItemRow({ item, idx, productSuggestions, tsiByType, onSetItem, onRemove
             onChange={e => onSetItem(idx, 'unit_cost', e.target.value)} />
         </div>
         <div>
-          {idx === 0 && <ColLabel>Preço unit.</ColLabel>}
-          <input className="form-control" type="number" min="0" step="0.01"
-            placeholder="0,00" value={item.unit_price}
-            onChange={e => onSetItem(idx, 'unit_price', e.target.value)} />
-        </div>
-        <div>
-          {idx === 0 && <ColLabel>Desc.%</ColLabel>}
-          <input className="form-control" type="number" min="0" max="100" step="0.1"
-            value={item.discount_pct} onChange={e => onSetItem(idx, 'discount_pct', e.target.value)} />
-        </div>
-        <div>
           {idx === 0 && (
             <ColLabel>
               Frete/un.
@@ -447,6 +433,17 @@ function ItemRow({ item, idx, productSuggestions, tsiByType, onSetItem, onRemove
           <input className="form-control" type="number" min="0" step="0.01"
             placeholder="0,00" value={item.unit_freight}
             onChange={e => onSetItem(idx, 'unit_freight', e.target.value)} />
+        </div>
+        <div>
+          {idx === 0 && <ColLabel>Preço unit.</ColLabel>}
+          <input className="form-control" type="number" min="0" step="0.01"
+            placeholder="0,00" value={item.unit_price}
+            onChange={e => onSetItem(idx, 'unit_price', e.target.value)} />
+        </div>
+        <div>
+          {idx === 0 && <ColLabel>Desc.%</ColLabel>}
+          <input className="form-control" type="number" min="0" max="100" step="0.1"
+            value={item.discount_pct} onChange={e => onSetItem(idx, 'discount_pct', e.target.value)} />
         </div>
         <div>
           {idx === 0 && <ColLabel>Margem (MB)</ColLabel>}
