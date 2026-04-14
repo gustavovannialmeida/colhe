@@ -14,11 +14,13 @@ export default function ProposalView() {
   useEffect(() => { load() }, [id])
 
   async function load() {
-    const [{ data: q }, { data: qi }] = await Promise.all([
+    const [{ data: qs }, { data: qd }, { data: qi }] = await Promise.all([
       supabase.from('v_quotation_summary').select('*').eq('id', id).single(),
+      supabase.from('quotations').select('payment_date, notes').eq('id', id).single(),
       supabase.from('quotation_items')
         .select('*, tsi:quotation_item_tsi(*)').eq('quotation_id', id),
     ])
+    const q = qs ? { ...qs, payment_date: qd?.payment_date, notes: qd?.notes || qs?.notes } : null
     setQuot(q)
     setItems(qi || [])
     if (q?.seller_id) {
@@ -61,14 +63,23 @@ export default function ProposalView() {
       <div className="proposal">
         {/* Header */}
         <div className="p-header">
-          <div>
-            <div className="p-brand">Colhe</div>
-            <div className="p-brand-sub">Proposta Comercial</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <img
+              src="/logo-novaciafertil.png"
+              alt="NovaCiafértil"
+              style={{ height: 56, objectFit: 'contain' }}
+              onError={e => { e.target.style.display = 'none' }}
+            />
+            <div>
+              <div className="p-brand">NovaCiafértil</div>
+              <div className="p-brand-sub">Proposta Comercial</div>
+            </div>
           </div>
           <div className="p-meta">
             <div className="p-code">{quot.code}</div>
             <div className="p-date">Data: {fmtDate(quot.created_at)}</div>
             {seller && <div className="p-date">Vendedor: {seller.name}</div>}
+            {quot.payment_date && <div className="p-date" style={{ marginTop: 4, fontWeight: 600, color: '#1a4a32' }}>Pagamento: {new Date(quot.payment_date + 'T00:00:00').toLocaleDateString('pt-BR')}</div>}
           </div>
         </div>
 
