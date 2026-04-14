@@ -8,6 +8,7 @@ import QuotationNew from './pages/QuotationNew'
 import QuotationDetail from './pages/QuotationDetail'
 import ProposalView from './pages/ProposalView'
 import Reports from './pages/Reports'
+import Team from './pages/Team'
 import Settings from './pages/Settings'
 
 function ProtectedRoute({ children }) {
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="cotacoes/nova" element={<QuotationNew />} />
         <Route path="cotacoes/:id"  element={<QuotationDetail />} />
         <Route path="relatorios"    element={<Reports />} />
+        <Route path="equipe"        element={<Team />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
