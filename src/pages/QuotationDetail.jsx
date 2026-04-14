@@ -90,7 +90,8 @@ export default function QuotationDetail() {
   if (!quot)   return <div className="page-body"><p className="text-muted">Cotação não encontrada.</p></div>
 
   const nextStatuses = NEXT_STATUSES[quot.status] || []
-  const canEdit      = ['rascunho','enviada','em_negociacao'].includes(quot.status)
+  const isAdmin = seller?.role === 'admin'
+  const canEdit = ['rascunho','enviada','em_negociacao'].includes(quot.status) || isAdmin
   const freightItems = Number(quot.freight_items) || 0
   const freightExtra = Number(quot.freight_extra)  || 0
   const freightTotal = Number(quot.freight_total)  || 0
