@@ -152,8 +152,13 @@ export default function QuotationNew() {
   async function handleSave(statusOverride) {
     setError('')
 
-    // Guard: seller must be loaded
-    if (!seller?.id) return setError('Aguarde — carregando dados do usuário. Tente novamente.')
+    // Guard: get seller ID — fallback to auth user if context not loaded yet
+    let sellerId = seller?.id
+    if (!sellerId) {
+      const { data: { user } } = await supabase.auth.getUser()
+      sellerId = user?.id
+    }
+    if (!sellerId) return setError("Sessao expirada. Faca login novamente.")
     if (!form.client_name?.trim()) return setError('Digite o nome do cliente.')
 
     const validItems = items.filter(i => i.product_name?.trim() && i.quantity && i.unit_price)
@@ -164,7 +169,7 @@ export default function QuotationNew() {
       const payload = {
         client_id:        null,
         client_name_free: form.client_name.trim(),
-        seller_id:        seller.id,
+        seller_id:        sellerId,
         freight:          freightExtra,
         commission_pct:   Number(form.commission_pct) || 0,
         notes:            form.notes || '',
@@ -224,7 +229,7 @@ export default function QuotationNew() {
 
       await supabase.from('quotation_history').insert({
         quotation_id: quotationId,
-        seller_id:    seller.id,
+        seller_id:    sellerId,
         new_status:   statusOverride || 'rascunho',
         note:         isEdit ? 'Cotação editada' : 'Cotação criada',
       })
