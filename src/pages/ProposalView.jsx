@@ -60,7 +60,14 @@ export default function ProposalView() {
         <span style={{ color: 'white', fontFamily: 'var(--font-display)', fontSize: '1.1rem', flex: 1 }}>
           Proposta Comercial — {quot.code}
         </span>
-        <button className="btn btn-amber" onClick={() => window.print()}>
+        <button className="btn btn-amber" onClick={() => {
+          const date = new Date(quot.created_at).toLocaleDateString('pt-BR').replace(/\//g, '-')
+          const client = quot.client_name?.replace(/[^a-zA-Z0-9À-ú\s]/g, '').trim() || 'Cliente'
+          const prev = document.title
+          document.title = `Proposta ${client} ${date}`
+          window.print()
+          document.title = prev
+        }}>
           🖨 Imprimir / Salvar PDF
         </button>
       </div>
