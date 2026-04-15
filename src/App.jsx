@@ -9,6 +9,7 @@ import QuotationDetail from './pages/QuotationDetail'
 import ProposalView from './pages/ProposalView'
 import Reports from './pages/Reports'
 import Team from './pages/Team'
+import Meetings from './pages/Meetings'
 import Settings from './pages/Settings'
 
 function ProtectedRoute({ children }) {
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="cotacoes/:id"  element={<QuotationDetail />} />
         <Route path="relatorios"    element={<Reports />} />
         <Route path="equipe"        element={<Team />} />
+        <Route path="reunioes"      element={<Meetings />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
