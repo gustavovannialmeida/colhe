@@ -32,7 +32,7 @@ export default function QuotationNew() {
   const [error, setError]   = useState('')
 
   const [form, setForm] = useState({
-    client_name: '', payment_date: '', commission_pct: '', notes: '',
+    client_name: '', payment_date: '', commission_pct: '', is_agenciamento: false, notes: '',
   })
   const [items, setItems] = useState([emptyItem()])
 
@@ -70,6 +70,7 @@ export default function QuotationNew() {
       client_name:    q.client_name_free || '',
       payment_date:   q.payment_date || '',
       commission_pct: q.commission_pct || '',
+      is_agenciamento: q.is_agenciamento || false,
       notes:          q.notes || '',
     })
     const { data: qi } = await supabase.from('quotation_items')
@@ -143,10 +144,19 @@ export default function QuotationNew() {
     return acc
   }, { revenue: 0, cost: 0, freight: 0 })
 
-  const freightTotal = totals.freight
-  const commission   = totals.revenue * (Number(form.commission_pct) || 0) / 100
-  const grossMargin  = totals.revenue ? ((totals.revenue - totals.cost) / totals.revenue) * 100 : 0
-  const netMargin    = totals.revenue ? ((totals.revenue - totals.cost - freightTotal - commission) / totals.revenue) * 100 : 0
+  const freightTotal    = totals.freight
+  const commissionPct   = Number(form.commission_pct) || 0
+  const commission      = totals.revenue * commissionPct / 100
+  const isAgenciamento  = form.is_agenciamento
+
+  // Agenciamento: sem custo de produto — lucro = comissão % × receita
+  const grossMargin = isAgenciamento
+    ? commissionPct
+    : totals.revenue ? ((totals.revenue - totals.cost) / totals.revenue) * 100 : 0
+
+  const netMargin = isAgenciamento
+    ? commissionPct
+    : totals.revenue ? ((totals.revenue - totals.cost - freightTotal - commission) / totals.revenue) * 100 : 0
 
   async function handleSave(statusOverride) {
     setError('')
@@ -172,6 +182,7 @@ export default function QuotationNew() {
         freight:          0,
         payment_date:     form.payment_date || null,
         commission_pct:   Number(form.commission_pct) || 0,
+        is_agenciamento:  form.is_agenciamento || false,
         notes:            form.notes || '',
         ...(statusOverride ? { status: statusOverride } : {}),
       }
@@ -293,10 +304,25 @@ export default function QuotationNew() {
                       onChange={e => setF('payment_date', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Comissão (%)</label>
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Comissão (%)</span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 400 }}>
+                        <input type="checkbox" checked={form.is_agenciamento || false}
+                          onChange={e => setF('is_agenciamento', e.target.checked)}
+                          style={{ width: 16, height: 16, accentColor: 'var(--amber-500)', cursor: 'pointer' }} />
+                        <span style={{ fontSize: '.8125rem', color: form.is_agenciamento ? 'var(--amber-500)' : 'var(--text-3)', fontWeight: form.is_agenciamento ? 600 : 400 }}>
+                          Agenciamento
+                        </span>
+                      </label>
+                    </label>
                     <input className="form-control" type="number" min="0" max="100" step="0.1"
                       placeholder="0,0" value={form.commission_pct}
                       onChange={e => setF('commission_pct', e.target.value)} />
+                    {form.is_agenciamento && (
+                      <div style={{ fontSize: '.75rem', color: 'var(--amber-500)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        ⚡ Sem custo — lucro = {form.commission_pct || 0}% da receita
+                      </div>
+                    )}
                   </div>
                   <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="form-label">Observações</label>
@@ -338,7 +364,12 @@ export default function QuotationNew() {
             <div className="card-body">
               <div className="stack" style={{ gap: 11 }}>
                 <SummaryRow label="Receita total"    value={fmtBRL(totals.revenue)} bold />
-                <SummaryRow label="Custo (produtos)" value={fmtBRL(totals.cost)} />
+                {!isAgenciamento && <SummaryRow label="Custo (produtos)" value={fmtBRL(totals.cost)} />}
+                {isAgenciamento && (
+                  <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-100)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', fontSize: '.8rem', color: 'var(--amber-600)' }}>
+                    ⚡ Agenciamento — sem custo de produto
+                  </div>
+                )}
                 <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
                   <SummaryRow label="Frete dos itens" value={fmtBRL(totals.freight)} />
                   
@@ -353,7 +384,7 @@ export default function QuotationNew() {
                 <SummaryRow label="Margem líquida"
                   value={<span className={`margin-pill ${netMargin >= 0 ? 'margin-pos' : 'margin-neg'}`}>{fmtPct(netMargin)}</span>} bold />
                 <p style={{ fontSize: '.7rem', color: 'var(--text-3)', marginTop: 2 }}>
-                  ML = receita − custo − frete total − comissão
+                  {isAgenciamento ? 'Agenciamento: ML = comissão %' : 'ML = receita − custo − frete − comissão'}
                 </p>
               </div>
             </div>
