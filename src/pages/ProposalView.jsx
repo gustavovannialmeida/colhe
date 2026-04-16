@@ -142,7 +142,10 @@ export default function ProposalView() {
                     </tr>
                     {/* TSI sub-rows + subtotal */}
                     {isSeed && (it.tsi || []).length > 0 && (() => {
-                      const tsiSubtotal = (it.tsi || []).reduce((s, t) => s + Number(t.quantity) * Number(t.unit_price), 0)
+                      const tsiUnitSum  = (it.tsi || []).reduce((s, t) => s + Number(t.unit_price), 0)
+                      const tsiTotal    = (it.tsi || []).reduce((s, t) => s + Number(t.quantity) * Number(t.unit_price), 0)
+                      const grandUnitPrice = fp + tsiUnitSum
+                      const grandTotal     = total + tsiTotal
                       return (
                         <>
                           {(it.tsi || []).map(t => {
@@ -161,11 +164,17 @@ export default function ProposalView() {
                               </tr>
                             )
                           })}
+                          {/* Subtotal row: semente + todos os TSI */}
                           <tr className="p-tsi-subtotal-row">
-                            <td colSpan={showDiscCol ? 5 : 3} style={{ paddingLeft: 24, fontStyle: 'italic', color: '#1e5c3e', fontSize: '.8rem' }}>
-                              Subtotal TSI — {it.product_name_free}
+                            <td style={{ paddingLeft: 24, fontStyle: 'italic', color: '#1e5c3e', fontSize: '.8rem', fontWeight: 700 }}>
+                              Subtotal — {it.product_name_free}
                             </td>
-                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#1e5c3e' }}>{fmtBRL(tsiSubtotal)}</td>
+                            <td style={{ textAlign: 'center', color: '#1e5c3e', fontSize: '.8rem' }}>{it.quantity}</td>
+                            <td style={{ textAlign: 'center', color: '#1e5c3e', fontSize: '.8rem' }}>{it.unit}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#1e5c3e' }}>{fmtBRL(grandUnitPrice)}</td>
+                            {showDiscCol && <td />}
+                            {showDiscCol && <td />}
+                            <td style={{ textAlign: 'right', fontWeight: 700, color: '#1e5c3e' }}>{fmtBRL(grandTotal)}</td>
                           </tr>
                         </>
                       )
